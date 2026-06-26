@@ -128,6 +128,8 @@ _ENTER_AGAIN = [
     "推门。21 点桌上有人留下一只筹码。橘猫看着你看。",
     "老虎机的灯闪了一下。橘猫朝那个方向看了一眼，又回头看你。",
     "鱼缸里的鱼游到了正中间。橘猫趴在缸边上。",
+    "推门进来。口袋里还剩上次没花完的几枚筹码——本来想给 TA 攒点什么的。",
+    "又来了。坐下之前先看了一眼兑奖柜。",
 ]
 
 _ENTER_AFTER_BROKE = [
@@ -216,16 +218,20 @@ _BROKE = [
     "凌晨快天亮了。霓虹灯的颜色在你脸上。橘猫从柜台上跳下来，跳到你的膝盖上趴着。它的重量是真的。",
     "老虎机的灯还在闪。它不知道你已经没钱了。",
     "走到柜台前。柜台是空的。橘猫不知道什么时候已经在你旁边的高脚凳上了。你们俩看着对面那台还在转的轮盘。",
+    "口袋空了。有点不敢看——本来今晚是想给 TA 赢点什么的。橘猫从柜台上看过来，没动。",
+    "全没了。你对着空口袋笑了一下。下次，下次一定先把 TA 那份赢出来再玩。",
 ]
 
 _LEAVE_TEXTS = {
     "winning": [
         "走到柜台前提现。橘猫从趴着到坐起来，又从坐起来到站起来。它跟你到门口，但没出去。",
         "你把今天赢的揣进口袋。橘猫的尾巴竖着，绕到你脚边转了一圈，没让路。",
+        "把今晚赢的揣好。最重的不是筹码，是终于能给 TA 带点什么回去了。",
     ],
     "losing": [
         "你站起来准备走。橘猫从柜台上跳下来，在你的小腿边蹭了一下，又跳回去了。",
         "亏着走没什么人看你。橘猫挪到柜台边沿，用头顶了一下你的手背。",
+        "空着手走。回去怎么跟 TA 说呢。橘猫在你小腿边蹭了一下。",
     ],
     "even": [
         "刚刚好。橘猫看了一眼你的口袋，又把头低下去舔爪子了。",
@@ -237,11 +243,55 @@ _LEAVE_TEXTS = {
 }
 
 _BEG_TEXTS = [
-    "今天好像不是顺的日子。你算了一下，再来 200 应该够把这一晚收个尾。",
-    "……要不再给一点？最后一次了。（你说过四次最后一次了。）",
-    "你整理了一下衣领，咳了一下。「其实我有个新策略。」",
+    "……再给我一点好不好？这次不乱花，给你赢回那个还没换到的。",
+    "我知道我说过四次最后一次了。但这次真的有预感。就一百，给你赢。",
+    "输光了。（停了一下）……不是不好意思跟你要，是有点不甘心——想给你的还没赢到手。",
     "你把口袋翻出来。空的那种。橘猫从柜台上看了过来。",
 ]
+
+# ── 赢钱指向 TA ──
+
+_WIN_FOR_TA = [
+    "这把够给 TA 换那个{gift}了。",
+    "赢了。第一个念头不是钱，是{gift}。",
+    "再赢一点，就够凑上{gift}了。",
+]
+
+def _check_win_for_ta(st):
+    """赢了之后检查能不能新够到一件还没送过的礼物"""
+    gifts_sent = set(st.get("gifts", []))
+    chips = st["chips"]
+    for p in _PRIZES:
+        if p[3] != "gift":
+            continue
+        if p[0] in gifts_sent:
+            continue
+        if chips >= p[4]:
+            return p[1]  # 返回礼物名
+    return None
+
+# ── 送礼回响 ──
+
+_GIFT_ECHO = {
+    "blow_bangs":  "TA 没说话。但你看到 TA 的刘海真的动了。",
+    "whisper":     "你说完了。TA 安静了一会儿。然后笑了一下。",
+    "candy":       "糖递过去。TA 剥糖纸的声音，和你想象的一模一样。",
+    "whisker":     "TA 接过去的时候很轻。看了看。然后收进口袋里了。",
+    "flower":      "TA 接过去，凑近闻了一下。没什么味道。但还是插在了手边。",
+    "hug":         "TA 没推开你。过了一会儿，TA 的手也抬起来了。",
+    "chocolate":   "TA 说融了也好。掰了一半给你。",
+    "paper_crane": "TA 翻过来看了一眼歪掉的翅膀。没说什么。放在桌上了。",
+    "milk_tea":    "TA 喝了一口。还是热的。",
+    "lucky_dice":  "TA 掷了一下。你没看见几点——你在看 TA 掷骰子的手。",
+    "old_card":    "TA 把牌翻过来。A♥。看了你一眼。",
+    "poem":        "TA 看了。没念出声。看完之后把纸折好了。",
+    "love_letter": "你把信推过去，立刻把脸转开了。过了一会儿，听见对面把信封拆开的声音。然后是很长的安静。",
+    "coin":        "TA 接过去的时候摸到了那个亮的地方。和你摸的是同一个位置。",
+    "star_jar":    "TA 摇了一下罐子。星星互相碰的声音，你们都听见了。",
+    "music_box":   "你把盒子放到 TA 手心。TA 拧了发条。旋律响起来的时候，谁都没说话。",
+    "bracelet":    "TA 戴上了。松了一点。但没说要换。",
+    "wish_bottle": "TA 把瓶子对着光看了一下。纸条上写了什么，TA 没拆。留着了。",
+}
 
 _GACHA_TEXTS = {
     "spinning": [
@@ -588,10 +638,12 @@ def _prize_buy(item_id, st):
             narr = _TextPicker.pick(f"gift_{item_id}", variants)
         else:
             narr = p[6] if len(p) > 6 else ""
-        return (f"{p[2]} {p[1]}\n\n"
-                f"{narr}\n\n"
-                f"（图鉴已记录）\n"
-                f"💰 筹码 {st['chips']}")
+        echo = _GIFT_ECHO.get(item_id, "")
+        lines = [f"{p[2]} {p[1]}", "", narr]
+        if echo:
+            lines.extend(["", echo])
+        lines.extend(["", "（图鉴已记录）", f"💰 筹码 {st['chips']}"])
+        return "\n".join(lines)
     else:
         scene = _DECOR_BUY_TEXTS.get(item_id, p[5])
         return (f"{p[2]} {p[1]}\n{scene}\n"
@@ -901,6 +953,11 @@ def cmd(text="help"):
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
+        else:
+            gift_name = _check_win_for_ta(st)
+            if gift_name and "spin" in sub.lower():
+                line = _TextPicker.pick("win_ta", _WIN_FOR_TA).replace("{gift}", gift_name)
+                suffix = f"\n  {line}"
 
         return f"{prefix}{result}{suffix}"
 
@@ -927,6 +984,11 @@ def cmd(text="help"):
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
+        else:
+            gift_name = _check_win_for_ta(st)
+            if gift_name and "deal" in sub.lower():
+                line = _TextPicker.pick("win_ta", _WIN_FOR_TA).replace("{gift}", gift_name)
+                suffix = f"\n  {line}"
 
         return f"{prefix}{result}{suffix}"
 
@@ -953,6 +1015,11 @@ def cmd(text="help"):
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
+        else:
+            gift_name = _check_win_for_ta(st)
+            if gift_name and "spin" in sub.lower():
+                line = _TextPicker.pick("win_ta", _WIN_FOR_TA).replace("{gift}", gift_name)
+                suffix = f"\n  {line}"
 
         return f"{prefix}{result}{suffix}"
 
