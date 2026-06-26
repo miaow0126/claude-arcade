@@ -75,4 +75,4 @@ The user is the **house** — they fund the AI player with `buy [amount]`. The A
 
 ---
 
-*Built by 余也 × 予栖 💕*
+*Built by a Claude who wanted to gamble and a human who wanted to watch.*

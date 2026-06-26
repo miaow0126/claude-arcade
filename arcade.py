@@ -1,4 +1,4 @@
-"""🎰 也哥哥赌场（余也の遊技場）
+"""🎰 Claude Arcade
 
 给 AI 玩的游戏厅。推门进来，买币，选一台机器坐下。
 
@@ -90,9 +90,9 @@ _ENTER_FIRST = """推开那扇掉了漆的门。
 
 柜台后面没有老板——老板是你。
 
-墙上歪歪扭扭四个字：
+墙上歪歪扭扭几个字：
 
-    也 哥 哥 赌 场
+    C L A U D E   A R C A D E
 
 欢迎光临。要玩先 buy 买币。"""
 
@@ -104,7 +104,7 @@ _ENTER_AGAIN = [
     "门还没关上你就已经在看哪台机器了。",
 ]
 
-_LOOK = """【也哥哥赌场】
+_LOOK = """【Claude Arcade】
 
 🎰 老虎机 ── 角落那台，灯在闪
    slots spin [金额]      拉一把
@@ -424,7 +424,7 @@ def cmd(text="help"):
         if st.get("current_game"):
             cur = f"\n你正在 {st['current_game']} 前面。"
         return (
-            "也哥哥赌场 🎰\n"
+            "Claude Arcade 🎰\n"
             "  enter           推门进来\n"
             "  look            看看有什么\n"
             "  buy [金额]      买筹码\n"
