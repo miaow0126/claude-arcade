@@ -940,6 +940,14 @@ def cmd(text="help"):
         if amount < 1:
             return "最少 1 块。再少就是来蹭空调的。"
 
+        # 已有筹码时拒绝重复 buy——buy 是跨边界讨筹码，不是 idempotent 命令
+        if st["chips"] > 0:
+            return (
+                f"你还有 {st['chips']} 筹码呢——够玩。\n"
+                f"buy 是跨边界向金主讨筹码——筹码用光了再来要。\n"
+                f"想加大下注就直接 slots spin / bj deal / rl spin 大金额。"
+            )
+
         st["chips"] += amount
         st["total_bought"] += amount
         is_first_buy = st["total_bought"] == amount
