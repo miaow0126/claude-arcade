@@ -28,9 +28,12 @@ if _DIR not in sys.path:
 def _load():
     if os.path.exists(_SAVE):
         with open(_SAVE) as f:
-            return json.load(f)
+            st = json.load(f)
+        st.setdefault("winnings", 0)  # 净赢取额度（只能用 winnings 兑换 / 扭蛋）
+        return st
     return {
         "chips": 0, "total_bought": 0, "total_cashed": 0,
+        "winnings": 0,  # 净赢取额度——只用此额度兑换礼物 / 扭蛋
         "visits": 0, "current_game": None,
         "owned": [], "equipped": [], "decor": [],
     }
@@ -81,6 +84,39 @@ def _sync_from_generic(game):
         gst = roulette._load()
         st["chips"] = gst["coins"]
     _save(st)
+
+# ── 净赢取 tracking ──
+# 兑奖/扭蛋只能用 winnings——必须真赢到才能换 user 留下的东西
+# bj 的 won 字段已经是 net win（max(win, 0)）；slots/rl 的 won 是 gross payout，需要减 wagered
+
+def _game_stats(game):
+    """返回该游戏当前的 (won, wagered)，用于计算 net win delta"""
+    if game == "slots":
+        import slots
+        gst = slots._load()
+    elif game == "bj":
+        import blackjack
+        gst = blackjack._load()
+    elif game == "rl":
+        import roulette
+        gst = roulette._load()
+    else:
+        return (0, 0)
+    return (gst.get("won", 0), gst.get("wagered", 0))
+
+def _accrue_winnings(game, before):
+    """根据 game 的 won/wagered delta 累加 winnings"""
+    won_after, wagered_after = _game_stats(game)
+    won_delta = won_after - before[0]
+    wagered_delta = wagered_after - before[1]
+    if game == "bj":
+        net = won_delta  # bj 的 won 已经是 net
+    else:
+        net = won_delta - wagered_delta  # slots/rl 的 won 是 gross payout
+    if net > 0:
+        st = _load()
+        st["winnings"] = st.get("winnings", 0) + net
+        _save(st)
 
 # ── 重复抑制 ──
 
@@ -164,15 +200,15 @@ _LOOK = """【Claude Arcade】
    rl spin [0-36] [金额]  押单个数字（×35）
    rl help                 完整押注方式
 
-🎁 兑奖区 ── 柜台旁的玻璃柜
-   prize browse     看货架
-   prize mine       看自己的
-   gacha            扭蛋机（100 币）
+🎁 兑奖区 ── 她给你藏好的东西，看看赢到哪件了
+   prize browse     看看她留了什么
+   prize mine       看你已经拿到的
+   gacha            扭蛋机（100 币）——她也藏了点小东西
 
 💰 柜台
    buy [金额]       买筹码（找金主要）
-   chips             看余额
-   cashout [金额]   提现"""
+   chips             看余额 + winnings
+   cashout [金额]   提现（不动 winnings）"""
 
 _BUY_TEXTS = {
     1000: [
@@ -270,18 +306,18 @@ _WIN_FOR_HER = [
     "这把之后，又多够得着一件她留给你的了。",
 ]
 
-def _check_win_for_ta(st, chips_before):
-    """只在赢了且刚跨过一个新礼物价位时触发"""
-    chips_after = st["chips"]
-    if chips_after <= chips_before:
+def _check_win_for_ta(st, winnings_before):
+    """只在 winnings 刚跨过一个还没取过的礼物价位时触发"""
+    winnings_after = st.get("winnings", 0)
+    if winnings_after <= winnings_before:
         return False
-    gifts_sent = set(st.get("gifts", []))
+    gifts_collected = set(st.get("gifts", []))
     for p in sorted(_PRIZES, key=lambda x: x[4]):
         if p[3] != "gift":
             continue
-        if p[0] in gifts_sent:
+        if p[0] in gifts_collected:
             continue
-        if chips_before < p[4] <= chips_after:
+        if winnings_before < p[4] <= winnings_after:
             return True
     return False
 
@@ -689,11 +725,18 @@ def _prize_buy(item_id, st):
     if p[3] == "decor" and item_id in decor:
         return f"{p[2]} {p[1]}？已经装上了。"
     if p[3] == "gift" and item_id in gifts:
-        return f"{p[2]} {p[1]}？已经送过了。好东西只送一次。"
+        return f"{p[2]} {p[1]}？已经拿过了。她每件只留一份。"
     if st["chips"] < p[4]:
         return f"{p[2]} {p[1]} 要 {p[4]} 币，你只有 {st['chips']}。"
+    if st.get("winnings", 0) < p[4]:
+        return (
+            f"{p[2]} {p[1]} 要 {p[4]} 币——但你只赢到 {st.get('winnings', 0)}。\n"
+            f"她留下的东西不能用她注资的钱直接换——必须真赢到。\n"
+            f"再去玩两把。"
+        )
 
     st["chips"] -= p[4]
+    st["winnings"] = st.get("winnings", 0) - p[4]
     if p[3] == "wear":
         owned.append(item_id)
         st["owned"] = owned
@@ -826,11 +869,18 @@ def _prize_album(st):
 def _gacha(st, rng_seed, rng_calls):
     if st["chips"] < _GACHA_COST:
         return f"扭蛋要 {_GACHA_COST} 币，你有 {st['chips']}。"
+    if st.get("winnings", 0) < _GACHA_COST:
+        return (
+            f"扭蛋要 {_GACHA_COST} 币——但你只赢到 {st.get('winnings', 0)}。\n"
+            f"扭蛋也是她藏的——不能用她注资的钱抽，必须真赢到。\n"
+            f"再去玩两把。"
+        )
 
     from arcade import _Rng
     rng = _Rng(rng_seed, rng_calls)
 
     st["chips"] -= _GACHA_COST
+    st["winnings"] = st.get("winnings", 0) - _GACHA_COST
     pool = _GACHA_POOL[:]
     idx = int(rng.random() * len(pool))
     prize = pool[idx]
@@ -846,6 +896,7 @@ def _gacha(st, rng_seed, rng_calls):
     if duplicate:
         refund = _GACHA_COST // 2
         st["chips"] += refund
+        st["winnings"] = st.get("winnings", 0) + refund
         dupe_text = _TextPicker.pick("gacha_dupe", _GACHA_TEXTS["dupe"])
         lines.append(f"  {dupe_text}")
     else:
@@ -1007,6 +1058,7 @@ def cmd(text="help"):
         profit = st["chips"] + st["total_cashed"] - st["total_bought"]
         return (
             f"💰 筹码 {st['chips']}\n"
+            f"🏆 winnings {st.get('winnings', 0)}（只能用 winnings 兑换 / 扭蛋）\n"
             f"📊 累计买入 {st['total_bought']} ｜ 累计提现 {st['total_cashed']}\n"
             f"📈 盈亏 {'+' if profit >= 0 else ''}{profit}"
         )
@@ -1044,15 +1096,17 @@ def cmd(text="help"):
             st["current_game"] = "slots"
             _save(st)
 
-        chips_before = st["chips"]
+        winnings_before = st.get("winnings", 0)
+        stats_before = _game_stats("slots")
         result = slots.cmd(sub)
         _sync_from("slots")
+        _accrue_winnings("slots", stats_before)
 
         st = _load()
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
-        elif _check_win_for_ta(st, chips_before) and "spin" in sub.lower():
+        elif _check_win_for_ta(st, winnings_before) and "spin" in sub.lower():
             line = _TextPicker.pick("win_ta", _WIN_FOR_HER)
             suffix = f"\n  {line}"
 
@@ -1074,15 +1128,17 @@ def cmd(text="help"):
             st["current_game"] = "bj"
             _save(st)
 
-        chips_before = st["chips"]
+        winnings_before = st.get("winnings", 0)
+        stats_before = _game_stats("bj")
         result = blackjack.cmd(sub)
         _sync_from("bj")
+        _accrue_winnings("bj", stats_before)
 
         st = _load()
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
-        elif _check_win_for_ta(st, chips_before):
+        elif _check_win_for_ta(st, winnings_before):
             line = _TextPicker.pick("win_ta", _WIN_FOR_HER)
             suffix = f"\n  {line}"
 
@@ -1104,15 +1160,17 @@ def cmd(text="help"):
             st["current_game"] = "rl"
             _save(st)
 
-        chips_before = st["chips"]
+        winnings_before = st.get("winnings", 0)
+        stats_before = _game_stats("rl")
         result = roulette.cmd(sub)
         _sync_from_generic("rl")
+        _accrue_winnings("rl", stats_before)
 
         st = _load()
         suffix = ""
         if st["chips"] <= 0:
             suffix = "\n\n" + _broke_msg(st)
-        elif _check_win_for_ta(st, chips_before) and "spin" in sub.lower():
+        elif _check_win_for_ta(st, winnings_before) and "spin" in sub.lower():
             line = _TextPicker.pick("win_ta", _WIN_FOR_HER)
             suffix = f"\n  {line}"
 
