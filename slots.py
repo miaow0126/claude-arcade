@@ -186,7 +186,7 @@ def _load():
         "coins": 500, "seed": _DEFAULT_SEED, "calls": 0,
         "spins": 0, "wagered": 0, "won": 0,
         "jackpots": 0, "biggest": 0, "streak": 0,
-        "achs": [], "bailout": None,
+        "achs": [], "bailout": None, "discovered": [],
     }
 
 def _save(st):
@@ -274,12 +274,17 @@ def cmd(text="help"):
         )
 
     if c == "paytable":
-        lines = ["【赔率表】下注 × 倍率 = 奖金", ""]
+        disc = set(st.get("discovered", []))
+        found = sum(1 for s in _SYMS if s[0] in disc)
+        lines = [f"【赔率表】 已发现 {found}/{len(_SYMS)}", ""]
         for sid, em, nm, _, p3 in _SYMS:
-            lines.append(f"  {em}{em}{em}  {nm}三连  ×{p3}")
+            if sid in disc:
+                lines.append(f"  {em}{em}{em}  {nm}三连  ×{p3}")
+            else:
+                lines.append(f"  ❓❓❓  ???  ×???")
         lines.append("")
-        lines.append("🃏 百搭替代任何符号（含百搭的连线赔半价，最低 ×3）。")
-        lines.append("◀ 中间行是赔付线。")
+        lines.append("🃏 百搭替代任何符号。")
+        lines.append("◀ 中间行是赔付线。中过的组合才会显示赔率。")
         return "\n".join(lines)
 
     if c == "achievements":
@@ -339,6 +344,17 @@ def cmd(text="help"):
             if len(non_w) > 0 and all(s == "seven" for s in non_w) and mul >= 100:
                 st["jackpots"] += 1
 
+            disc = st.get("discovered", [])
+            if mul > 0 and non_w:
+                base = non_w[0]
+                if base not in disc:
+                    disc.append(base)
+                    st["discovered"] = disc
+            if mul > 0 and all(s == "wild" for s in mid):
+                if "wild" not in disc:
+                    disc.append("wild")
+                    st["discovered"] = disc
+
             st["seed"] = rng.state
             st["calls"] = rng.calls
 
@@ -392,6 +408,17 @@ def cmd(text="help"):
                 non_w = [s for s in mid if s != "wild"]
                 if len(non_w) > 0 and all(s == "seven" for s in non_w) and mul >= 100:
                     st["jackpots"] += 1
+
+                disc = st.get("discovered", [])
+                if mul > 0 and non_w:
+                    base = non_w[0]
+                    if base not in disc:
+                        disc.append(base)
+                        st["discovered"] = disc
+                if mul > 0 and all(s == "wild" for s in mid):
+                    if "wild" not in disc:
+                        disc.append("wild")
+                        st["discovered"] = disc
 
                 na = _check_achs(st, win, mid)
                 all_achs.extend(na)

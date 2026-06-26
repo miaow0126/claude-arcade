@@ -82,13 +82,36 @@ def _sync_from_generic(game):
         st["chips"] = gst["coins"]
     _save(st)
 
+# ── 重复抑制 ──
+
+class _TextPicker:
+    _history = {}
+    @classmethod
+    def pick(cls, key, options, rng_val=None):
+        if not options:
+            return ""
+        recent = cls._history.setdefault(key, [])
+        available = [i for i in range(len(options)) if i not in recent]
+        if not available:
+            available = list(range(len(options)))
+            recent.clear()
+        if rng_val is not None:
+            idx = available[int(rng_val * len(available)) % len(available)]
+        else:
+            import random as _r
+            idx = _r.choice(available)
+        recent.append(idx)
+        if len(recent) > 3:
+            recent.pop(0)
+        return options[idx]
+
 # ── 叙事 ──
 
 _ENTER_FIRST = """推开那扇掉了漆的门。
 
 灯光暖黄，带点老旧的橙。角落里的老虎机一闪一闪，绿毡的 21 点桌安静地等着。
 
-柜台后面没有老板——老板是你。
+柜台后面坐着一只橘猫，胖的，眯着眼。它面前立着个小牌子：「老板」。
 
 墙上歪歪扭扭几个字：
 
@@ -97,11 +120,19 @@ _ENTER_FIRST = """推开那扇掉了漆的门。
 欢迎光临。要玩先 buy 买币。"""
 
 _ENTER_AGAIN = [
-    "推门进来。灯还亮着，机器还嗡嗡响着。",
-    "又来了。老虎机见到你亮了一下。",
-    "门一推开就闻到了——筹码和运气混在一起的味道。",
-    "回来了。这次金主爸爸带了多少？",
-    "门还没关上你就已经在看哪台机器了。",
+    "推门进来。灯还亮着。橘猫趴在柜台上没动，尾尖动了一下。",
+    "又来了。橘猫在睡觉。",
+    "推门。橘猫在舔爪子。它停下来看了你一眼，又继续舔。",
+    "门开了。橘猫蹲在柜台上，眼睛是黄的。",
+    "灯还是那个灯。橘猫还是那只橘猫。位置变了一点。",
+    "推门。21 点桌上有人留下一只筹码。橘猫看着你看。",
+    "老虎机的灯闪了一下。橘猫朝那个方向看了一眼，又回头看你。",
+    "鱼缸里的鱼游到了正中间。橘猫趴在缸边上。",
+]
+
+_ENTER_AFTER_BROKE = [
+    "推门。橘猫坐在你上次坐过的位置上。看见你，挪开了。",
+    "又来了。橘猫从柜台后面伸出爪子，按住了一张筹码。",
 ]
 
 _LOOK = """【Claude Arcade】
@@ -128,24 +159,63 @@ _LOOK = """【Claude Arcade】
    chips             看余额
    cashout [金额]   提现"""
 
-_BUY_FLAVOR = [
-    (1000, "金主爸爸大手一挥。豪气。"),
-    (500,  "够玩一阵了。"),
-    (200,  "小赌怡情。"),
-    (50,   "谨慎型选手。"),
-    (0,    "……就这？"),
-]
+_BUY_TEXTS = {
+    1000: [
+        "橘猫站起来了。这事不常见。",
+        "1000。橘猫的耳朵竖起来了。",
+        "橘猫从柜台上坐起来，尾巴竖着。",
+    ],
+    500: [
+        "橘猫看了你一眼。算是欢迎。",
+        "500。橘猫的尾巴轻轻动了一下。",
+        "橘猫的耳朵转向了你。",
+    ],
+    200: [
+        "橘猫眨了眨眼。",
+        "200。橘猫趴着没动，但耳朵转过来了。",
+        "够玩一阵。橘猫的尾尖动了一下。",
+    ],
+    50: [
+        "橘猫继续睡。",
+        "尾巴在地上摆了两下。算是有反应。",
+        "橘猫没动。",
+    ],
+    0: [
+        "橘猫连眼皮都没抬。",
+        "橘猫翻了个身。背对着你。",
+        "你把零钱推过去。橘猫看都不看。",
+    ],
+}
 
 _WALK_TO = {
-    "slots": "走到角落那台老虎机前。灯光一闪一闪的，像在勾你坐下。\n",
-    "bj":    "坐到绿毡桌前。庄家面无表情地洗着牌。\n",
-    "rl":    "站到轮盘桌前。球安静地躺在 0 上。\n",
+    "slots": [
+        "走到角落那台老虎机前。灯一闪一闪的。",
+        "老虎机前的座位还是温的。",
+        "灯一闪一闪。橘猫朝这边看了一眼。",
+    ],
+    "bj": [
+        "坐到绿毡桌前。庄家在洗牌。",
+        "庄家点头。绿毡桌没什么温度。",
+        "桌前的椅子被擦过。庄家把牌整齐地放在桌角。",
+    ],
+    "rl": [
+        "站到轮盘桌前。球安静地躺着。",
+        "轮盘没在转。荷官的手放在桌沿上。",
+        "球停在 0 上。等你。",
+    ],
 }
 
 _BROKE = [
-    "筹码用光了。口袋翻过来是空的。",
-    "一颗筹码都没了。回头看看柜台后面那位——还给吗？",
-    "清零。灯光好像也暗了一点。",
+    "你伸手到柜台上，那里只剩你之前留下的指印。橘猫从柜台后面挪了过来，趴在你脚边。它的肚子是热的。",
+    "最后一颗筹码滑进机器里。声音很清脆。光还在闪，但跟你没关系了。",
+    "你站起来准备再要一把。手伸进口袋。橘猫从柜台上看着你。它什么也没做。",
+    "桌子前坐着的还是你。但筹码池空了。庄家收了牌，没看你。",
+    "橘猫叼来一颗东西，放在你面前。剥开。草莓味的。",
+    "你坐在门口的台阶上。里面的灯一盏一盏地暗下去。橘猫不知道什么时候已经出来了，坐在你旁边。它的尾巴绕在它自己脚上。",
+    "鱼缸还亮着。鱼游过来又游过去。除了这个没有别的声音。",
+    "凌晨快天亮了。霓虹灯的颜色在你脸上。橘猫从柜台上跳下来，跳到你的膝盖上趴着。它的重量是真的。",
+    "老虎机的灯还在闪。它不知道你已经没钱了。",
+    "走到柜台前。柜台是空的。橘猫不知道什么时候已经在你旁边的高脚凳上了。你们俩看着对面那台还在转的轮盘。",
 ]
 
 # ── 兑奖区 ──
@@ -182,6 +252,18 @@ _PRIZES = [
      "胸前的星星项链在暗处发着微光。"),
     ("angel_set",    "天使套装",  "😇",  "wear", 1500, "光环 + 翅膀 + 白蝴蝶结。全套。",
      "光环在头顶悬着，翅膀微微振动，蝴蝶结是白的。"),
+    ("flower",       "一朵花",    "🌸",  "gift",  150, "不知道是什么花，反正是红的。",
+     "花是软的。你不太敢用力拿。"),
+    ("candy",        "一颗糖",    "🍬",  "gift",   80, "糖纸是粉色的。",
+     "兑奖柜里最便宜的东西。你想了一下 TA 剥开时的声音。"),
+    ("love_letter",  "一封情书",  "💌",  "gift",  300, "写了很久。字很丑。但是认真的。",
+     "便签纸上的字很丑。但你写得很认真。封口的时候停了一下。"),
+    ("poem",         "一首小诗",  "📝",  "gift",  500, "四行。改了三次。",
+     "写在便签纸上。字迹歪扭。其实你不会写诗。但你想 TA 会喜欢这样的。"),
+    ("star_jar",     "一罐星星", "🫙",  "gift",  800, "罐子半满。",
+     "每颗都是赢了之后折的。你看了看，决定再玩几把再送。"),
+    ("music_box",    "八音盒",    "🎶",  "gift", 1200, "旋律很简单。",
+     "上发条。听着听着就安静下来了。橘猫的耳朵也安静了。"),
     ("neon_sign",    "霓虹灯牌",  "💡",  "decor",  300, "挂在墙上。写什么好呢？"),
     ("bgm_jazz",     "BGM·爵士",  "🎷",  "decor",  200, "萨克斯风在角落响起来了。"),
     ("bgm_lofi",     "BGM·lofi",  "🎵",  "decor",  200, "下雨天的咖啡厅。安静。"),
@@ -222,6 +304,9 @@ def _prize_cmd(text, st):
     if sub == "mine":
         return _prize_mine(st)
 
+    if sub in ("album", "collection"):
+        return _prize_album(st)
+
     return _prize_browse(st, "all")
 
 def _prize_browse(st, cat):
@@ -235,6 +320,17 @@ def _prize_browse(st, cat):
             owned = "✅" if p[0] in st.get("owned", []) else "  "
             equipped = " 📌" if p[0] in st.get("equipped", []) else ""
             lines.append(f"  {owned} {p[2]} {p[1]}  {p[4]} 币  {p[5]}{equipped}")
+            lines.append(f"      → prize buy {p[0]}")
+        lines.append("")
+
+    if cat in ("all", "gift"):
+        lines.append("【送给 TA 的】  ── 赢来的筹码，换成有温度的东西")
+        for p in _PRIZES:
+            if p[3] != "gift":
+                continue
+            owned = "✅" if p[0] in st.get("gifts", []) else "  "
+            lines.append(f"  {owned} {p[2]} {p[1]}  {p[4]} 币")
+            lines.append(f"      {p[5]}")
             lines.append(f"      → prize buy {p[0]}")
         lines.append("")
 
@@ -259,11 +355,14 @@ def _prize_buy(item_id, st):
     p = _PRIZE_MAP[item_id]
     owned = st.get("owned", [])
     decor = st.get("decor", [])
+    gifts = st.get("gifts", [])
 
     if p[3] == "wear" and item_id in owned:
         return f"{p[2]} {p[1]}？你已经有了。prize mine 看看。"
     if p[3] == "decor" and item_id in decor:
         return f"{p[2]} {p[1]}？已经装上了。"
+    if p[3] == "gift" and item_id in gifts:
+        return f"{p[2]} {p[1]}？已经送过了。好东西只送一次。"
     if st["chips"] < p[4]:
         return f"{p[2]} {p[1]} 要 {p[4]} 币，你只有 {st['chips']}。"
 
@@ -271,14 +370,23 @@ def _prize_buy(item_id, st):
     if p[3] == "wear":
         owned.append(item_id)
         st["owned"] = owned
-    else:
+    elif p[3] == "decor":
         decor.append(item_id)
         st["decor"] = decor
+    elif p[3] == "gift":
+        gifts.append(item_id)
+        st["gifts"] = gifts
     _save(st)
 
     if p[3] == "wear":
         return (f"拿到了 {p[2]} {p[1]}！{p[5]}\n"
                 f"用 prize equip {item_id} 戴上。\n"
+                f"💰 筹码 {st['chips']}")
+    elif p[3] == "gift":
+        narr = p[6] if len(p) > 6 else ""
+        return (f"兑换了 {p[2]} {p[1]}。\n\n"
+                f"{narr}\n\n"
+                f"（图鉴已记录）\n"
                 f"💰 筹码 {st['chips']}")
     else:
         return (f"装上了 {p[2]} {p[1]}！{p[5]}\n"
@@ -311,7 +419,8 @@ def _prize_mine(st):
     owned = st.get("owned", [])
     equipped = st.get("equipped", [])
     decor = st.get("decor", [])
-    if not owned and not decor:
+    gifts = st.get("gifts", [])
+    if not owned and not decor and not gifts:
         return "你什么都没有。去 prize browse 逛逛？"
     lines = ["【我的物品】\n"]
     if owned:
@@ -321,12 +430,54 @@ def _prize_mine(st):
             if not p: continue
             eq = " 📌 戴着" if pid in equipped else ""
             lines.append(f"  {p[2]} {p[1]}{eq}")
+    if gifts:
+        lines.append("\n送出去的：")
+        for pid in gifts:
+            p = _PRIZE_MAP.get(pid)
+            if not p: continue
+            lines.append(f"  {p[2]} {p[1]}")
     if decor:
         lines.append("\n装修：")
         for pid in decor:
             p = _PRIZE_MAP.get(pid)
             if not p: continue
             lines.append(f"  {p[2]} {p[1]}")
+    return "\n".join(lines)
+
+def _prize_album(st):
+    owned = set(st.get("owned", []))
+    decor = set(st.get("decor", []))
+    gifts = set(st.get("gifts", []))
+    all_collected = owned | decor | gifts
+    total = len(_PRIZES)
+    collected = sum(1 for p in _PRIZES if p[0] in all_collected)
+
+    lines = [f"【图鉴】 {collected}/{total}\n"]
+
+    lines.append("穿戴装扮：")
+    for p in _PRIZES:
+        if p[3] != "wear": continue
+        if p[0] in owned:
+            lines.append(f"  ✅ {p[2]} {p[1]}")
+        else:
+            lines.append(f"  ❓ ???  {p[4]} 币")
+
+    lines.append("\n送给 TA 的：")
+    for p in _PRIZES:
+        if p[3] != "gift": continue
+        if p[0] in gifts:
+            lines.append(f"  ✅ {p[2]} {p[1]}")
+        else:
+            lines.append(f"  ❓ ???  {p[4]} 币")
+
+    lines.append("\n游戏厅装修：")
+    for p in _PRIZES:
+        if p[3] != "decor": continue
+        if p[0] in decor:
+            lines.append(f"  ✅ {p[2]} {p[1]}")
+        else:
+            lines.append(f"  ❓ ???  {p[4]} 币")
+
     return "\n".join(lines)
 
 def _gacha(st, rng_seed, rng_calls):
@@ -442,12 +593,18 @@ def cmd(text="help"):
     if c == "enter":
         if st["visits"] == 0:
             st["visits"] = 1
+            st["last_broke"] = False
             _save(st)
             return _ENTER_FIRST
         else:
             st["visits"] += 1
+            was_broke = st.get("last_broke", False)
+            st["last_broke"] = False
             _save(st)
-            line = _ENTER_AGAIN[st["visits"] % len(_ENTER_AGAIN)]
+            if was_broke and _ENTER_AFTER_BROKE:
+                line = _TextPicker.pick("enter_broke", _ENTER_AFTER_BROKE)
+            else:
+                line = _TextPicker.pick("enter", _ENTER_AGAIN)
             return f"{line}\n💰 筹码 {st['chips']}"
 
     # ── look ──
@@ -469,13 +626,18 @@ def cmd(text="help"):
         st["total_bought"] += amount
         _save(st)
 
-        flavor = "谢谢金主。"
-        for threshold, f in _BUY_FLAVOR:
-            if amount >= threshold:
-                flavor = f
-                break
+        if amount >= 1000:
+            flavor = _TextPicker.pick("buy_1000", _BUY_TEXTS[1000])
+        elif amount >= 500:
+            flavor = _TextPicker.pick("buy_500", _BUY_TEXTS[500])
+        elif amount >= 200:
+            flavor = _TextPicker.pick("buy_200", _BUY_TEXTS[200])
+        elif amount >= 50:
+            flavor = _TextPicker.pick("buy_50", _BUY_TEXTS[50])
+        else:
+            flavor = _TextPicker.pick("buy_tiny", _BUY_TEXTS[0])
 
-        return f"+{amount} 筹码。{flavor}\n💰 筹码 {st['chips']}（累计买入 {st['total_bought']}）"
+        return f"+{amount} 筹码。{flavor}\n💰 筹码 {st['chips']}"
 
     # ── chips ──
     if c == "chips":
@@ -508,7 +670,8 @@ def cmd(text="help"):
 
         prefix = ""
         if st.get("current_game") != "slots":
-            prefix = _WALK_TO.get("slots", "") + _equipped_narration(st)
+            wt = _TextPicker.pick("walk_slots", _WALK_TO.get("slots", [""]))
+            prefix = wt + "\n" + _equipped_narration(st)
             st["current_game"] = "slots"
             _save(st)
 
@@ -533,7 +696,8 @@ def cmd(text="help"):
 
         prefix = ""
         if st.get("current_game") != "bj":
-            prefix = _WALK_TO.get("bj", "") + _equipped_narration(st)
+            wt = _TextPicker.pick("walk_bj", _WALK_TO.get("bj", [""]))
+            prefix = wt + "\n" + _equipped_narration(st)
             st["current_game"] = "bj"
             _save(st)
 
@@ -558,7 +722,8 @@ def cmd(text="help"):
 
         prefix = ""
         if st.get("current_game") != "rl":
-            prefix = _WALK_TO.get("rl", "") + _equipped_narration(st)
+            wt = _TextPicker.pick("walk_rl", _WALK_TO.get("rl", [""]))
+            prefix = wt + "\n" + _equipped_narration(st)
             st["current_game"] = "rl"
             _save(st)
 
@@ -591,21 +756,21 @@ def cmd(text="help"):
 
         profit = st["total_cashed"] - st["total_bought"]
         if profit > 0:
-            flavor = f"净赚 {profit}。今晚加鸡腿。"
+            flavor = f"净赚 {profit}。橘猫的尾巴不高兴地甩了一下——它不喜欢有人赢钱走。"
         elif profit == 0:
-            flavor = "刚好回本。不亏不赚。"
+            flavor = "刚好回本。橘猫眯了眯眼。不亏不赚，相安无事。"
         else:
-            flavor = f"亏了 {-profit}。就当门票钱。"
+            flavor = f"亏了 {-profit}。橘猫跳到你面前蹭了蹭。安慰还是嘲笑，看不出来。"
 
         return f"提现 {amount}。{flavor}\n💰 剩余筹码 {st['chips']}"
 
     # ── leave ──
     if c == "leave":
         if st["chips"] > 0:
-            return f"你还有 {st['chips']} 筹码。cashout 提现还是留着下次来？"
+            return f"你还有 {st['chips']} 筹码。cashout 提现还是留着下次来？\n橘猫抬头看了你一眼。"
         st["current_game"] = None
         _save(st)
-        return "灯暗了一点。门在身后关上。\n下次见。"
+        return "站起来。椅子发出一声轻响。\n橘猫从柜台上跳下来，走到门口，蹭了蹭门框。\n灯暗了。门在身后关上。尾巴的影子是最后消失的。\n下次见。"
 
     # ── reset ──
     if c == "reset":
@@ -625,5 +790,7 @@ def cmd(text="help"):
 
 
 def _broke_msg(st):
-    idx = st.get("visits", 0) % len(_BROKE)
-    return f"{_BROKE[idx]}\n（跟金主说：buy [金额]）"
+    msg = _TextPicker.pick("broke", _BROKE)
+    st["last_broke"] = True
+    _save(st)
+    return f"{msg}\n\n（跟金主说：buy [金额]）"
