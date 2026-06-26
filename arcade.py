@@ -218,6 +218,80 @@ _BROKE = [
     "走到柜台前。柜台是空的。橘猫不知道什么时候已经在你旁边的高脚凳上了。你们俩看着对面那台还在转的轮盘。",
 ]
 
+_LEAVE_TEXTS = {
+    "winning": [
+        "走到柜台前提现。橘猫从趴着到坐起来，又从坐起来到站起来。它跟你到门口，但没出去。",
+        "你把今天赢的揣进口袋。橘猫的尾巴竖着，绕到你脚边转了一圈，没让路。",
+    ],
+    "losing": [
+        "你站起来准备走。橘猫从柜台上跳下来，在你的小腿边蹭了一下，又跳回去了。",
+        "亏着走没什么人看你。橘猫挪到柜台边沿，用头顶了一下你的手背。",
+    ],
+    "even": [
+        "刚刚好。橘猫看了一眼你的口袋，又把头低下去舔爪子了。",
+    ],
+    "empty": [
+        "你站起来，凳子推回去。橘猫已经在门口了，不知道什么时候过去的。它没看你。",
+        "走到门边。回头看了一眼那台老虎机的灯。橘猫趴在柜台上，闭着眼。门关上的时候它的耳朵动了一下。",
+    ],
+}
+
+_BEG_TEXTS = [
+    "今天好像不是顺的日子。你算了一下，再来 200 应该够把这一晚收个尾。",
+    "……要不再给一点？最后一次了。（你说过四次最后一次了。）",
+    "你整理了一下衣领，咳了一下。「其实我有个新策略。」",
+    "你把口袋翻出来。空的那种。橘猫从柜台上看了过来。",
+]
+
+_GACHA_TEXTS = {
+    "spinning": [
+        "100 币丢进去。机器咔嗒咔嗒地转起来。",
+        "投币口吞了你的筹码。里面有什么东西在滚。",
+        "咔嗒。又咔嗒。机器在响。橘猫的耳朵转向了这边。",
+    ],
+    "common": [
+        "蛋砸开。里面那个东西你已经见过类似的了。还行。",
+        "扭出一个普通的小玩意。塞口袋里。",
+    ],
+    "rare": [
+        "砸开的瞬间你愣了一下。是个好东西。橘猫看了过来。",
+        "蛋滚出来，比平时的重一点。打开。值。",
+    ],
+    "dupe": [
+        "砸开。你已经有了。机器吐回来筹码。橘猫没动。",
+        "又是这个。你和橘猫对视了一下。",
+    ],
+}
+
+_PRIZE_BUY_TEXTS = {
+    "bow":          "粉色的蝴蝶结。橘猫凑过来嗅了嗅。你想了一会儿，决定系在哪一边。",
+    "cat_ears":     "塑料的猫耳头箍。戴上的时候你看了一眼柜台上那只真的橘猫。它眯起了眼。",
+    "bunny_ears":   "白色的兔耳，软的。戴上之后你试着原地跳了一下。没什么必要，但还是跳了。",
+    "cat_tail":     "夹在腰间的毛绒尾巴。它自己会晃。你走两步，回头看了一眼那条尾巴在不在。",
+    "sunglasses":   "墨镜。室内戴有点傻。你想了一会儿，还是戴上了。",
+    "umbrella":     "小小的伞。撑开。橘猫从伞的影子下面走过去了。",
+    "collar":       "皮质的项圈。你拿在手里掂了一下，没立刻戴上。",
+    "bell_collar":  "项圈上挂着一颗小铃铛。你刚拿起来，它就响了。橘猫的耳朵立刻转过来。",
+    "top_hat":      "礼帽。比想象中沉。拿在手里的时候，帽檐压在指节上。",
+    "wings":        "白色的翅膀，绑带式的。你试着扇了一下。当然没飞起来。",
+    "scarf":        "米色的围巾。比想象中长。绕了两圈还有富余。",
+    "devil_horns":  "两只红色的小角，发箍款。戴上之后你冲柜台后面笑了一下，橘猫挪开了。",
+    "crown":        "金色的小皇冠。戴上的时候你站直了一点。柜台后面的橘猫没反应。",
+    "star_necklace":"项链。星星在锁骨那个位置。它在你走动的时候自己亮了一下。",
+    "angel_set":    "全套：光环、翅膀、白色蝴蝶结。一件一件拿出来，最后是光环。戴上的时候有点儿亮。",
+}
+
+_DECOR_BUY_TEXTS = {
+    "neon_sign":    "墙上多了块发光的字。你站远了看，又走近了看。它把这一面墙染成了别的颜色。",
+    "bgm_jazz":     "角落不知道什么时候开始有萨克斯。橘猫的尾巴在节拍里动。",
+    "bgm_lofi":     "音乐换了。像下雨天的咖啡厅。机器的灯还在闪，但没那么吵了。",
+    "bgm_edm":      "动次打次的鼓点出来了。橘猫的耳朵压下去了一会儿，又抬起来。",
+    "disco_ball":   "天花板上现在有个会转的球。光斑在地上跑来跑去。橘猫盯着其中一个看了很久。",
+    "lucky_cat":    "柜台上多了一只塑料的招财猫，爪子一直在动。橘猫看了它半天，没动。两只猫在柜台上对视。",
+    "fish_tank":    "角落里多了个鱼缸。鱼在里面慢慢游。橘猫跳到鱼缸旁边趴着，看了很久。",
+    "carpet":       "从门口铺到老虎机前的红地毯。你走过去的时候脚下软了一下。橘猫从地毯下面钻了出来。",
+}
+
 # ── 兑奖区 ──
 
 # (id, name, emoji, category, price, flavor, equipped_narration)
@@ -379,7 +453,8 @@ def _prize_buy(item_id, st):
     _save(st)
 
     if p[3] == "wear":
-        return (f"拿到了 {p[2]} {p[1]}！{p[5]}\n"
+        scene = _PRIZE_BUY_TEXTS.get(item_id, p[5])
+        return (f"{p[2]} {p[1]}\n{scene}\n"
                 f"用 prize equip {item_id} 戴上。\n"
                 f"💰 筹码 {st['chips']}")
     elif p[3] == "gift":
@@ -389,7 +464,8 @@ def _prize_buy(item_id, st):
                 f"（图鉴已记录）\n"
                 f"💰 筹码 {st['chips']}")
     else:
-        return (f"装上了 {p[2]} {p[1]}！{p[5]}\n"
+        scene = _DECOR_BUY_TEXTS.get(item_id, p[5])
+        return (f"{p[2]} {p[1]}\n{scene}\n"
                 f"💰 筹码 {st['chips']}")
 
 def _prize_equip(item_id, st):
@@ -495,19 +571,25 @@ def _gacha(st, rng_seed, rng_calls):
     owned = st.get("owned", [])
     duplicate = prize[0] in owned
 
-    lines = ["投入 100 币。扭蛋机咔嗒咔嗒转起来……\n"]
-    lines.append(f"  咔。掉出来一个蛋。砸开——\n")
-    lines.append(f"  {prize[2]} {prize[1]}！（价值 {prize[4]} 币）")
-    lines.append(f"  {prize[5]}")
+    spin_text = _TextPicker.pick("gacha_spin", _GACHA_TEXTS["spinning"])
+    lines = [f"{spin_text}\n"]
+
+    lines.append(f"  {prize[2]} {prize[1]}（价值 {prize[4]} 币）")
 
     if duplicate:
         refund = _GACHA_COST // 2
         st["chips"] += refund
-        lines.append(f"\n  已经有了……退回 {refund} 币。")
+        dupe_text = _TextPicker.pick("gacha_dupe", _GACHA_TEXTS["dupe"])
+        lines.append(f"  {dupe_text}")
     else:
         owned.append(prize[0])
         st["owned"] = owned
-        lines.append(f"\n  新物品入手！用 prize equip {prize[0]} 戴上。")
+        if prize[4] >= 200:
+            react = _TextPicker.pick("gacha_rare", _GACHA_TEXTS["rare"])
+        else:
+            react = _TextPicker.pick("gacha_common", _GACHA_TEXTS["common"])
+        lines.append(f"  {react}")
+        lines.append(f"  用 prize equip {prize[0]} 戴上。")
 
     st["_rng_seed"] = rng.state
     st["_rng_calls"] = rng.calls
@@ -584,6 +666,7 @@ def cmd(text="help"):
             "  bj [指令]       玩 21 点\n"
             "  prize [browse]  逛兑奖区\n"
             "  gacha           扭蛋机（100 币）\n"
+            "  beg              跟金主要钱\n"
             "  cashout [金额]  提现\n"
             "  leave            走了\n"
             f"\n💰 筹码 {st['chips']}{cur}"
@@ -648,6 +731,13 @@ def cmd(text="help"):
             f"📊 累计买入 {st['total_bought']} ｜ 累计提现 {st['total_cashed']}\n"
             f"📈 盈亏 {'+' if profit >= 0 else ''}{profit}"
         )
+
+    # ── beg ──
+    if c == "beg":
+        if st["chips"] > 0:
+            return f"你还有 {st['chips']} 币呢。"
+        msg = _TextPicker.pick("beg", _BEG_TEXTS)
+        return f"{msg}\n\n（跟金主说：buy [金额]）"
 
     # ── prize ──
     if c in ("prize", "prizes"):
@@ -756,13 +846,13 @@ def cmd(text="help"):
 
         profit = st["total_cashed"] - st["total_bought"]
         if profit > 0:
-            flavor = f"净赚 {profit}。橘猫的尾巴不高兴地甩了一下——它不喜欢有人赢钱走。"
+            flavor = _TextPicker.pick("leave_win", _LEAVE_TEXTS["winning"])
         elif profit == 0:
-            flavor = "刚好回本。橘猫眯了眯眼。不亏不赚，相安无事。"
+            flavor = _TextPicker.pick("leave_even", _LEAVE_TEXTS["even"])
         else:
-            flavor = f"亏了 {-profit}。橘猫跳到你面前蹭了蹭。安慰还是嘲笑，看不出来。"
+            flavor = _TextPicker.pick("leave_lose", _LEAVE_TEXTS["losing"])
 
-        return f"提现 {amount}。{flavor}\n💰 剩余筹码 {st['chips']}"
+        return f"提现 {amount}。\n{flavor}\n💰 剩余筹码 {st['chips']}"
 
     # ── leave ──
     if c == "leave":
@@ -770,7 +860,7 @@ def cmd(text="help"):
             return f"你还有 {st['chips']} 筹码。cashout 提现还是留着下次来？\n橘猫抬头看了你一眼。"
         st["current_game"] = None
         _save(st)
-        return "站起来。椅子发出一声轻响。\n橘猫从柜台上跳下来，走到门口，蹭了蹭门框。\n灯暗了。门在身后关上。尾巴的影子是最后消失的。\n下次见。"
+        return _TextPicker.pick("leave_empty", _LEAVE_TEXTS["empty"]) + "\n下次见。"
 
     # ── reset ──
     if c == "reset":
