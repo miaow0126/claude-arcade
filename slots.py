@@ -317,6 +317,9 @@ def cmd(text="help"):
         lines.append("")
         lines.append("🃏 百搭替代任何符号。")
         lines.append("◀ 中间行是赔付线。中过的组合才会显示赔率。")
+        lines.append("")
+        lines.append("💡 对子（两个相同）= ×1 返本，不算赢，winnings 不动。")
+        lines.append("   三连以上才是 net 赢——winnings 累积。")
         return "\n".join(lines)
 
     if c == "achievements":

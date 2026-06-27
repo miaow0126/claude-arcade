@@ -1068,21 +1068,33 @@ def cmd(text="help"):
         else:
             flavor = _TextPicker.pick("buy_tiny", _BUY_TEXTS[0])
 
-        out = f"+{amount} 筹码。{flavor}\n💰 筹码 {st['chips']}"
         if is_first_buy:
-            out += "\n\n橘猫的尾巴往场子里那边一拨——`look` 看看？"
+            out = (
+                f"+{amount} 筹码。{flavor}\n"
+                f"💰 筹码 {st['chips']}（赌资 — 下注 / 提现）\n"
+                f"🏆 winnings 0（兑奖凭证 — 真赢到才涨，对子返本不算）\n"
+                f"\n橘猫的尾巴往场子里那边一拨——`look` 看看？"
+            )
+        else:
+            out = f"+{amount} 筹码。{flavor}\n💰 筹码 {st['chips']}"
         return out
 
     # ── chips ──
     if c == "chips":
         net = st["total_bought"] - st["total_cashed"]
         profit = st["chips"] + st["total_cashed"] - st["total_bought"]
-        return (
-            f"💰 筹码 {st['chips']}（赌资 — 下注 / 提现）\n"
-            f"🏆 winnings {st.get('winnings', 0)}（兑奖凭证 — 兑现礼物 / 扭蛋）\n"
-            f"📊 累计买入 {st['total_bought']} ｜ 累计提现 {st['total_cashed']}\n"
-            f"📈 盈亏 {'+' if profit >= 0 else ''}{profit}"
-        )
+        w = st.get("winnings", 0)
+        lines = [
+            f"💰 筹码 {st['chips']}（赌资 — 下注 / 提现）",
+            f"🏆 winnings {w}（兑奖凭证 — 兑现礼物 / 扭蛋）",
+        ]
+        if w == 0:
+            lines.append("   ↑ winnings 从净赢累积——对子返本不算，net 赢才计入")
+        lines.extend([
+            f"📊 累计买入 {st['total_bought']} ｜ 累计提现 {st['total_cashed']}",
+            f"📈 盈亏 {'+' if profit >= 0 else ''}{profit}",
+        ])
+        return "\n".join(lines)
 
     # ── beg ──
     if c == "beg":
