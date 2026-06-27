@@ -722,16 +722,13 @@ def _prize_buy(item_id, st):
         return f"{p[2]} {p[1]}？已经装上了。"
     if p[3] == "gift" and item_id in gifts:
         return f"{p[2]} {p[1]}？已经拿过了。她每件只留一份。"
-    if st["chips"] < p[4]:
-        return f"{p[2]} {p[1]} 要 {p[4]} 币，你只有 {st['chips']}。"
     if st.get("winnings", 0) < p[4]:
         return (
-            f"{p[2]} {p[1]} 要 {p[4]} 币——但你只赢到 {st.get('winnings', 0)}。\n"
-            f"她留下的东西不能用她注资的钱直接换——必须真赢到。\n"
-            f"再去玩两把。"
+            f"{p[2]} {p[1]} 要 {p[4]} winnings——你只赢到 {st.get('winnings', 0)}。\n"
+            f"再去赢两把。"
         )
 
-    st["chips"] -= p[4]
+    # 只扣 winnings——chips 是赌资 ledger，winnings 是兑奖 ledger，两个 decoupled（arcade ticket 模型）
     st["winnings"] = st.get("winnings", 0) - p[4]
     if p[3] == "wear":
         owned.append(item_id)
@@ -744,14 +741,14 @@ def _prize_buy(item_id, st):
         st["gifts"] = gifts
     _save(st)
 
+    footer = f"💰 筹码 {st['chips']} ｜ 🏆 winnings {st.get('winnings', 0)}"
     if p[3] == "wear":
         scene = _PRIZE_BUY_TEXTS.get(item_id, p[5])
         echo = _WEAR_ECHO.get(item_id, "")
         lines = [f"{p[2]} {p[1]}", "", scene]
         if echo:
             lines.extend(["", echo])
-        lines.extend(["", f"用 prize equip {item_id} 戴上。",
-                      f"💰 筹码 {st['chips']}"])
+        lines.extend(["", f"用 prize equip {item_id} 戴上。", footer])
         return "\n".join(lines)
     elif p[3] == "gift":
         variants = _GIFT_BUY_TEXTS.get(item_id)
@@ -763,7 +760,7 @@ def _prize_buy(item_id, st):
         lines = [f"{p[2]} {p[1]}", "", narr]
         if echo:
             lines.extend(["", echo])
-        lines.extend(["", "（图鉴已记录）", f"💰 筹码 {st['chips']}"])
+        lines.extend(["", "（图鉴已记录）", footer])
         return "\n".join(lines)
     else:
         scene = _DECOR_BUY_TEXTS.get(item_id, p[5])
@@ -771,7 +768,7 @@ def _prize_buy(item_id, st):
         lines = [f"{p[2]} {p[1]}", "", scene]
         if echo:
             lines.extend(["", echo])
-        lines.extend(["", f"💰 筹码 {st['chips']}"])
+        lines.extend(["", footer])
         return "\n".join(lines)
 
 def _prize_equip(item_id, st):
@@ -863,19 +860,16 @@ def _prize_album(st):
     return "\n".join(lines)
 
 def _gacha(st, rng_seed, rng_calls):
-    if st["chips"] < _GACHA_COST:
-        return f"扭蛋要 {_GACHA_COST} 币，你有 {st['chips']}。"
     if st.get("winnings", 0) < _GACHA_COST:
         return (
-            f"扭蛋要 {_GACHA_COST} 币——但你只赢到 {st.get('winnings', 0)}。\n"
-            f"扭蛋也是她藏的——不能用她注资的钱抽，必须真赢到。\n"
-            f"再去玩两把。"
+            f"扭蛋要 {_GACHA_COST} winnings——你只赢到 {st.get('winnings', 0)}。\n"
+            f"再去赢两把。"
         )
 
     from arcade import _Rng
     rng = _Rng(rng_seed, rng_calls)
 
-    st["chips"] -= _GACHA_COST
+    # 只扣 winnings——decoupled，chips 不动
     st["winnings"] = st.get("winnings", 0) - _GACHA_COST
     pool = _GACHA_POOL[:]
     idx = int(rng.random() * len(pool))
@@ -891,7 +885,6 @@ def _gacha(st, rng_seed, rng_calls):
 
     if duplicate:
         refund = _GACHA_COST // 2
-        st["chips"] += refund
         st["winnings"] = st.get("winnings", 0) + refund
         dupe_text = _TextPicker.pick("gacha_dupe", _GACHA_TEXTS["dupe"])
         lines.append(f"  {dupe_text}")
@@ -909,7 +902,7 @@ def _gacha(st, rng_seed, rng_calls):
     st["_rng_calls"] = rng.calls
     _save(st)
 
-    lines.append(f"💰 筹码 {st['chips']}")
+    lines.append(f"💰 筹码 {st['chips']} ｜ 🏆 winnings {st.get('winnings', 0)}")
     return "\n".join(lines)
 
 # PRNG for gacha
@@ -1053,8 +1046,8 @@ def cmd(text="help"):
         net = st["total_bought"] - st["total_cashed"]
         profit = st["chips"] + st["total_cashed"] - st["total_bought"]
         return (
-            f"💰 筹码 {st['chips']}\n"
-            f"🏆 winnings {st.get('winnings', 0)}（只能用 winnings 兑换 / 扭蛋）\n"
+            f"💰 筹码 {st['chips']}（赌资 — 下注 / 提现）\n"
+            f"🏆 winnings {st.get('winnings', 0)}（兑奖凭证 — 兑现礼物 / 扭蛋）\n"
             f"📊 累计买入 {st['total_bought']} ｜ 累计提现 {st['total_cashed']}\n"
             f"📈 盈亏 {'+' if profit >= 0 else ''}{profit}"
         )
