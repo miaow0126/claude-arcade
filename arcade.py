@@ -87,7 +87,7 @@ def _sync_from_generic(game):
 
 # ── 净赢取 tracking ──
 # 兑奖/扭蛋只能用 winnings——必须真赢到才能换 user 留下的东西
-# bj 的 won 字段已经是 net win（max(win, 0)）；slots/rl 的 won 是 gross payout，需要减 wagered
+# bj/rl 的 won 字段已经是 net win（不含本金返回）；slots 的 won 是 gross payout（含本金），需要减 wagered
 
 def _game_stats(game):
     """返回该游戏当前的 (won, wagered)，用于计算 net win delta"""
@@ -109,10 +109,10 @@ def _accrue_winnings(game, before):
     won_after, wagered_after = _game_stats(game)
     won_delta = won_after - before[0]
     wagered_delta = wagered_after - before[1]
-    if game == "bj":
-        net = won_delta  # bj 的 won 已经是 net
+    if game in ("bj", "rl"):
+        net = won_delta  # bj/rl 的 won 已经是 net win（不含本金返回）
     else:
-        net = won_delta - wagered_delta  # slots/rl 的 won 是 gross payout
+        net = won_delta - wagered_delta  # slots 的 won 是 gross payout（含本金返回）
     if net <= 0:
         return None
     st = _load()
