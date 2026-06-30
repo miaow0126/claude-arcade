@@ -18,8 +18,21 @@
 """
 import json, os
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
+_DIR  = os.path.dirname(os.path.abspath(__file__))
 _SAVE = os.path.join(_DIR, "blackjack_save.json")
+_LOG  = os.path.join(_DIR, "blackjack_log.jsonl")
+
+# ── 日志 ──
+
+def _log_hand(bet, net, hands):
+    from datetime import datetime, timezone, timedelta
+    ts = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+    entry = json.dumps({"at": ts, "bet": bet, "net": net, "hands": hands}, ensure_ascii=False)
+    try:
+        with open(_LOG, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
 
 # ── PRNG ──
 
@@ -239,6 +252,7 @@ def _settle(st, player, dealer, bet, doubled=False):
         flags["exact21"] = True
 
     new_achs = _check_achs(st, win, **flags)
+    _log_hand(bet, win, st["hands"])
     return win, result, new_achs
 
 # ── 旁白 ──
@@ -515,6 +529,7 @@ def cmd(text="help"):
         st["streak"] = min(st["streak"], 0) - 1
         st["current"] = None
         _save(st)
+        _log_hand(cur["bet"], -half, st["hands"])
         return f"🏳️ 投降。退回 {half} 币，损失 {cur['bet'] - half} 币。\n💰 {st['coins']} 币 ｜ 第 {st['hands']} 手"
 
     if c == "reset":

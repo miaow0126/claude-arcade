@@ -15,8 +15,24 @@
 """
 import json, os
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
+_DIR  = os.path.dirname(os.path.abspath(__file__))
 _SAVE = os.path.join(_DIR, "slots_save.json")
+_LOG  = os.path.join(_DIR, "slots_log.jsonl")
+
+# ── 日志 ──
+
+def _log_spin(bet, win, mid_ids, spin_num):
+    from datetime import datetime, timezone, timedelta
+    ts = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+    entry = json.dumps({
+        "at": ts, "bet": bet, "win": win, "net": win - bet,
+        "mid": " ".join(_EMOJI[s] for s in mid_ids), "spins": spin_num,
+    }, ensure_ascii=False)
+    try:
+        with open(_LOG, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
 
 # ── 确定性 PRNG（mulberry32，跟钓鱼同源）──
 
@@ -395,6 +411,7 @@ def cmd(text="help"):
 
             new_achs = _check_achs(st, win, mid)
             _save(st)
+            _log_spin(bet, win, mid, st["spins"])
 
             out = [_render(grid)]
             if win > 0:
@@ -457,6 +474,7 @@ def cmd(text="help"):
 
                 na = _check_achs(st, win, mid)
                 all_achs.extend(na)
+                _log_spin(bet, win, mid, st["spins"])
 
                 if win > 0:
                     emojis = " ".join(_EMOJI[s] for s in mid)

@@ -16,8 +16,25 @@
 """
 import json, os
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
+_DIR  = os.path.dirname(os.path.abspath(__file__))
 _SAVE = os.path.join(_DIR, "roulette_save.json")
+_LOG  = os.path.join(_DIR, "roulette_log.jsonl")
+
+# ── 日志 ──
+
+def _log_spin_rl(bet_type, bet_amount, result, won, win, spins):
+    from datetime import datetime, timezone, timedelta
+    ts = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+    entry = json.dumps({
+        "at": ts, "bet_type": bet_type, "bet": bet_amount,
+        "result": result, "won": won, "win": win,
+        "net": win if won else -bet_amount, "spins": spins,
+    }, ensure_ascii=False)
+    try:
+        with open(_LOG, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
 
 # ── PRNG ──
 
@@ -189,6 +206,7 @@ def _do_spin(st, rng, bet_type, bet_num, bet_payout, bet_label, bet_amount):
 
     is_straight_win = bet_type == "straight" and won
     new_achs = _check_achs(st, win, is_straight_win, result == 0)
+    _log_spin_rl(bet_type, bet_amount, result, won, win, st["spins"])
 
     return result, won, win, new_achs
 
