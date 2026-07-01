@@ -367,7 +367,7 @@ def build_body(cache, hist):
   <td>{label}{mid_s}{bt_s}</td>
   <td>—</td>
   <td style="color:#c06050">-{bet_v}</td>
-  <td style="color:#4db86a">{f'+{recv_v}' if recv_v else '—'}</td>
+  <td style="color:{'#4db86a' if recv_v else '#604830'}">{f'+{recv_v}' if recv_v else '—'}</td>
   <td>{win_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
@@ -409,9 +409,15 @@ def build_body(cache, hist):
     if not rows:
         rows = '<tr><td colspan="6" style="text-align:center;color:#604830;padding:16px">还没有记录</td></tr>'
 
+    cash_total = sum(e["amount"] for e in cash_events if e["type"] == "cashout") \
+               - sum(e["amount"] for e in cash_events if e["type"] == "buyin")
+    cash_col = "#4db86a" if cash_total >= 0 else "#c06050"
+    cash_s = f'{"+"+str(cash_total) if cash_total>=0 else str(cash_total)}'
+
     subtotal = f"""<tr style="background:#2a1500">
-  <td colspan="3" style="color:#806040;font-size:.72rem;letter-spacing:.06em">游戏净盈亏小计</td>
-  <td></td>
+  <td style="color:#806040;font-size:.72rem;letter-spacing:.06em">小计</td>
+  <td style="color:{cash_col}">{cash_s}</td>
+  <td></td><td></td>
   <td style="color:{total_net_col}">{'+' if total_net>=0 else ''}{total_net}</td>
   <td></td>
 </tr>"""
