@@ -338,9 +338,10 @@ def build_body(cache, hist):
         all_events.append({"_type": "play", "game": "roulette", **ev})
     all_events.sort(key=lambda x: x["at"], reverse=True)
 
-    # subtotal from individual plays
+    # winnings subtotal: individual plays + legacy events
     all_plays = slots_log + bj_log + rl_log
-    total_net = sum(e.get("net", 0) for e in all_plays)
+    total_net = (sum(e.get("winnings", 0) for e in all_plays)
+               + sum(e.get("winnings", 0) for e in legacy_game_events))
     total_net_col = "#4db86a" if total_net >= 0 else "#c06050"
 
     def fmt_num(v, positive_green=True):
