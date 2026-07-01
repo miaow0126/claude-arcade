@@ -343,50 +343,61 @@ def build_body(cache, hist):
     total_net = sum(e.get("net", 0) for e in all_plays)
     total_net_col = "#4db86a" if total_net >= 0 else "#c06050"
 
+    def fmt_num(v, positive_green=True):
+        if v is None: return "—"
+        c = "#4db86a" if v >= 0 else "#c06050"
+        if not positive_green: c = "#c06050" if v >= 0 else "#4db86a"
+        s = f'+{v}' if v >= 0 else str(v)
+        return f'<span style="color:{c}">{s}</span>'
+
     rows = ""
     for ev in all_events[:80]:
         t = ev["_type"]
         if t == "play":
-            net_v = ev.get("net", 0)
-            net_c = "#4db86a" if net_v >= 0 else "#c06050"
-            net_s = f'{"+"+str(net_v) if net_v>=0 else str(net_v)}'
-            label = GAME_LABEL.get(ev["game"], ev["game"])
-            bet_v = ev.get("bet", 0)
-            win_v = ev.get("win", 0)
-            mid_s = f' <span style="font-size:.7rem;color:#604830">{ev["mid"]}</span>' if ev.get("mid") else ""
-            bt_s  = f' <span style="font-size:.7rem;color:#604830">{ev.get("bet_type","")}</span>' if ev.get("bet_type") else ""
+            net_v  = ev.get("net", 0)
+            bet_v  = ev.get("bet", 0)
+            recv_v = max(0, bet_v + net_v)
+            win_w  = ev.get("winnings")
+            label  = GAME_LABEL.get(ev["game"], ev["game"])
+            mid_s  = f' <span style="font-size:.7rem;color:#604830">{ev["mid"]}</span>' if ev.get("mid") else ""
+            bt_s   = f' <span style="font-size:.7rem;color:#604830">{ev.get("bet_type","")}</span>' if ev.get("bet_type") else ""
+            win_s  = fmt_num(win_w) if win_w is not None else "—"
             rows += f"""<tr>
   <td>{label}{mid_s}{bt_s}</td>
-  <td style="color:#806040">单局</td>
+  <td>—</td>
   <td style="color:#a08060">-{bet_v}</td>
-  <td style="color:{net_c}">{net_s}</td>
+  <td style="color:#a08060">{f'+{recv_v}' if recv_v else '—'}</td>
+  <td>{win_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
         elif t == "legacy_game":
-            net_v = ev.get("net", 0)
-            net_c = "#4db86a" if net_v >= 0 else "#c06050"
-            net_s = f'{"+"+str(net_v) if net_v>=0 else str(net_v)}'
-            cnt_s = f'×{ev["count"]}' if ev.get("count", 1) > 1 else ""
+            net_v  = ev.get("net", 0)
+            wag_v  = ev.get("wagered", 0)
+            recv_v = wag_v + net_v
+            cnt_s  = f'×{ev["count"]}' if ev.get("count", 1) > 1 else ""
             rows += f"""<tr>
   <td>{GAME_LABEL.get(ev['game'], ev['game'])} {cnt_s}</td>
-  <td style="color:#806040">批次</td>
-  <td style="color:#a08060">-{ev['wagered']}</td>
-  <td style="color:{net_c}">{net_s}</td>
+  <td>—</td>
+  <td style="color:#a08060">-{wag_v}</td>
+  <td style="color:#a08060">{f'+{recv_v}' if recv_v > 0 else '—'}</td>
+  <td>—</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
         elif t == "cash":
             if ev["type"] == "buyin":
                 rows += f"""<tr>
   <td>💵 买入筹码</td>
-  <td style="color:#806040">现金</td>
+  <td style="color:#c06050">-{ev['amount']}</td>
   <td>—</td>
   <td style="color:#4db86a">+{ev['amount']}</td>
+  <td>—</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
             else:
                 rows += f"""<tr>
   <td>💸 提现</td>
-  <td style="color:#806040">现金</td>
+  <td style="color:#4db86a">+{ev['amount']}</td>
+  <td>—</td>
   <td style="color:#c06050">-{ev['amount']}</td>
   <td>—</td>
   <td>{fmt_time(ev['at'])}</td>
@@ -396,7 +407,7 @@ def build_body(cache, hist):
         rows = '<tr><td colspan="6" style="text-align:center;color:#604830;padding:16px">还没有记录</td></tr>'
 
     subtotal = f"""<tr style="background:#2a1500">
-  <td colspan="2" style="color:#806040;font-size:.72rem;letter-spacing:.06em">游戏净盈亏小计</td>
+  <td colspan="3" style="color:#806040;font-size:.72rem;letter-spacing:.06em">游戏净盈亏小计</td>
   <td></td>
   <td style="color:{total_net_col}">{'+' if total_net>=0 else ''}{total_net}</td>
   <td></td>
@@ -405,7 +416,7 @@ def build_body(cache, hist):
     ledger_section = f"""<div class="section-title">整体流水账</div>
 <div class="ledger-wrap">
 <table class="ledger-table">
-<thead><tr><th>项目</th><th>类型</th><th>下注/支出</th><th>盈亏</th><th>时间</th></tr></thead>
+<thead><tr><th>项目</th><th>现金兑换</th><th>下注/支出</th><th>筹码收回</th><th>净盈利(奖金)</th><th>时间</th></tr></thead>
 <tbody>{rows}{subtotal}</tbody>
 </table>
 </div>"""

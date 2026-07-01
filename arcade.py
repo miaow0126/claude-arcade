@@ -106,13 +106,11 @@ def _game_stats(game):
 
 def _accrue_winnings(game, before):
     """根据 game 的 won/wagered delta 累加 winnings。返回 first-win hint（如果是第一次净赢）"""
+    import json as _json
     won_after, wagered_after = _game_stats(game)
     won_delta = won_after - before[0]
     wagered_delta = wagered_after - before[1]
-    if game in ("bj", "rl"):
-        net = won_delta  # bj/rl 的 won 已经是 net win（不含本金返回）
-    else:
-        net = won_delta - wagered_delta  # slots 的 won 是 gross payout（含本金返回）
+    net = won_delta - wagered_delta  # all games now track gross won
     if net <= 0:
         return None
     st = _load()
@@ -127,6 +125,21 @@ def _accrue_winnings(game, before):
             f"   对子返本不算赢（net 0），winnings 只在真正净赢时增加。"
         )
     _save(st)
+    # 把 winnings 写进最后一条游戏日志
+    log_names = {"slots": "slots_log.jsonl", "bj": "blackjack_log.jsonl", "rl": "roulette_log.jsonl"}
+    log_file = log_names.get(game)
+    if log_file:
+        try:
+            with open(log_file, "r", encoding="utf-8") as f:
+                lines = [l for l in f.read().strip().split("\n") if l.strip()]
+            if lines:
+                last = _json.loads(lines[-1])
+                last["winnings"] = net
+                lines[-1] = _json.dumps(last, ensure_ascii=False)
+                with open(log_file, "w", encoding="utf-8") as f:
+                    f.write("\n".join(lines) + "\n")
+        except Exception:
+            pass
     return hint
 
 # ── 重复抑制 ──
