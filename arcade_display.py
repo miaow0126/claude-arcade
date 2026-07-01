@@ -417,7 +417,7 @@ def build_body(cache, hist):
     subtotal = f"""<tr style="background:#2a1500">
   <td style="color:#806040;font-size:.72rem;letter-spacing:.06em">小计</td>
   <td style="color:{cash_col}">{cash_s}</td>
-  <td></td><td></td>
+  <td colspan="2" style="text-align:center;color:var(--accent);font-weight:600">🪙 {chips}</td>
   <td style="color:{total_net_col}">{'+' if total_net>=0 else ''}{total_net}</td>
   <td></td>
 </tr>"""
