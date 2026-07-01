@@ -193,7 +193,7 @@ def _do_spin(st, rng, bet_type, bet_num, bet_payout, bet_label, bet_amount):
     if won:
         payout = bet_amount * (bet_payout + 1)
         st["coins"] += payout
-        win = bet_amount * bet_payout
+        win = payout
     else:
         win = 0
 

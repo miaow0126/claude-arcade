@@ -917,6 +917,7 @@ def _gacha(st, rng_seed, rng_calls):
     else:
         owned.append(prize[0])
         st["owned"] = owned
+        st.setdefault("gacha_log", []).append(prize[0])
         if prize[4] >= 600:
             react = _TextPicker.pick("gacha_rare", _GACHA_TEXTS["rare"])
         else:

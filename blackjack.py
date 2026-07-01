@@ -235,7 +235,7 @@ def _settle(st, player, dealer, bet, doubled=False):
         result.append(f"平局。{pv} = {dv}")
         st["pushes"] += 1
 
-    st["won"] += max(win, 0)
+    st["won"] += max(bet + win, 0)
     st["hands"] += 1
     if win > st["biggest"]:
         st["biggest"] = win
@@ -432,7 +432,7 @@ def cmd(text="help"):
             st["calls"] = rng2.calls
             bet = cur["bet"]
             st["coins"] += bet * 2
-            st["won"] += bet
+            st["won"] += bet * 2
             st["wins"] += 1
             st["hands"] += 1
             st["streak"] = max(st["streak"], 0) + 1

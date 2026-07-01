@@ -96,7 +96,7 @@ GAME_KEYS = {
     "blackjack": ("hands",   "wagered", "won"),
     "roulette":  ("spins",   "wagered", "won"),
 }
-GAME_LABEL = {"slots": "🎰 老虎机", "blackjack": "🃏 二十一点", "roulette": "🎡 轮盘"}
+GAME_LABEL = {"slots": "🎰 老虎机", "blackjack": "🃏 21点", "roulette": "🎡 轮盘"}
 
 
 def update_history(cache, hist):
@@ -143,15 +143,24 @@ def update_history(cache, hist):
         curr_c = Counter(curr_prizes)
         prev_c = Counter(prev_prizes)
 
+        gacha_log = arc.get("gacha_log", [])
+        prev_gacha_cnt = hist.get("prev_gacha_cnt", {})
         for pid, cnt in curr_c.items():
             delta = cnt - prev_c.get(pid, 0)
             for _ in range(delta):
                 info = PRIZE_INFO.get(pid, (pid, "🎁", "gift", 0, ""))
+                gcnt = gacha_log.count(pid)
+                gprev = prev_gacha_cnt.get(pid, 0)
+                from_gacha = gcnt > gprev
+                if from_gacha:
+                    prev_gacha_cnt[pid] = gcnt
+                cost = 150 if from_gacha else info[3]
                 hist.setdefault("prize_events", []).append({
                     "id": pid, "name": info[0], "emoji": info[1],
-                    "cost": info[3], "category": info[2],
+                    "cost": cost, "category": info[2],
                     "obtained_at": ts, "used_at": None,
                 })
+        hist["prev_gacha_cnt"] = prev_gacha_cnt
 
         for pid, cnt in prev_c.items():
             delta = cnt - curr_c.get(pid, 0)
@@ -284,7 +293,7 @@ def build_body(cache, hist):
             st = f'<span style="color:#c06050">已使用 · {fmt_time(ev["used_at"])}</span>'
         else:
             st = '<span style="color:#4db86a">持有中</span>'
-        cost_txt = '<span style="color:#604830">记录前</span>' if ev.get("init") else f'<span style="color:#c06050">-{ev["cost"]}</span>'
+        cost_txt = f'<span style="color:#c06050">-{ev["cost"]}</span>'
         prize_rows += f"""<tr>
   <td>{ev['emoji']} {ev['name']}</td>
   <td>{CAT_LABEL.get(ev['category'], ev['category'])}</td>
@@ -350,7 +359,6 @@ def build_body(cache, hist):
   <td>{label}{mid_s}{bt_s}</td>
   <td style="color:#806040">单局</td>
   <td style="color:#a08060">-{bet_v}</td>
-  <td style="color:#a08060">{"+"+str(win_v) if win_v else "—"}</td>
   <td style="color:{net_c}">{net_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
@@ -360,10 +368,9 @@ def build_body(cache, hist):
             net_s = f'{"+"+str(net_v) if net_v>=0 else str(net_v)}'
             cnt_s = f'×{ev["count"]}' if ev.get("count", 1) > 1 else ""
             rows += f"""<tr>
-  <td>{GAME_LABEL.get(ev['game'], ev['game'])} {cnt_s} <span style="font-size:.7rem;color:#604830">(记录前)</span></td>
+  <td>{GAME_LABEL.get(ev['game'], ev['game'])} {cnt_s}</td>
   <td style="color:#806040">批次</td>
   <td style="color:#a08060">-{ev['wagered']}</td>
-  <td style="color:#a08060">+{ev['won']}</td>
   <td style="color:{net_c}">{net_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
@@ -372,16 +379,15 @@ def build_body(cache, hist):
                 rows += f"""<tr>
   <td>💵 买入筹码</td>
   <td style="color:#806040">现金</td>
-  <td style="color:#c06050">-{ev['amount']}</td>
-  <td>—</td><td>—</td>
+  <td>—</td>
+  <td style="color:#4db86a">+{ev['amount']}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
             else:
                 rows += f"""<tr>
   <td>💸 提现</td>
   <td style="color:#806040">现金</td>
-  <td>—</td>
-  <td style="color:#4db86a">+{ev['amount']}</td>
+  <td style="color:#c06050">-{ev['amount']}</td>
   <td>—</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
@@ -391,7 +397,7 @@ def build_body(cache, hist):
 
     subtotal = f"""<tr style="background:#2a1500">
   <td colspan="2" style="color:#806040;font-size:.72rem;letter-spacing:.06em">游戏净盈亏小计</td>
-  <td colspan="2"></td>
+  <td></td>
   <td style="color:{total_net_col}">{'+' if total_net>=0 else ''}{total_net}</td>
   <td></td>
 </tr>"""
@@ -399,7 +405,7 @@ def build_body(cache, hist):
     ledger_section = f"""<div class="section-title">整体流水账</div>
 <div class="ledger-wrap">
 <table class="ledger-table">
-<thead><tr><th>项目</th><th>类型</th><th>支出</th><th>收入</th><th>盈亏</th><th>时间</th></tr></thead>
+<thead><tr><th>项目</th><th>类型</th><th>下注/支出</th><th>盈亏</th><th>时间</th></tr></thead>
 <tbody>{rows}{subtotal}</tbody>
 </table>
 </div>"""
@@ -512,6 +518,17 @@ def build_body(cache, hist):
             mark = f' <span style="color:#4db86a">✓{owned_cnt}</span>' if owned_cnt else ""
             rows += f'<div class="catalog-item"><span class="ci-name">{emoji} {name}{mark}</span><span class="ci-cost">{cost}</span></div>'
         catalog_html += f'<div class="catalog-group"><div class="catalog-cat">{CAT_LABEL[cat]}</div><div class="catalog-items">{rows}</div></div>'
+
+    gacha_ids = {"bow","cat_ears","bunny_ears","cat_tail","sunglasses","umbrella","scarf","top_hat","wings","devil_horns","angel_set"}
+    gacha_rows = ""
+    for pid, info in PRIZE_INFO.items():
+        if pid not in gacha_ids:
+            continue
+        name, emoji, _, _, _ = info
+        owned_cnt = sum(1 for ev in prize_events if ev["id"] == pid and ev["used_at"] is None)
+        mark = f' <span style="color:#4db86a">✓{owned_cnt}</span>' if owned_cnt else ""
+        gacha_rows += f'<div class="catalog-item"><span class="ci-name">{emoji} {name}{mark}</span><span class="ci-cost">150</span></div>'
+    catalog_html += f'<div class="catalog-group"><div class="catalog-cat">扭蛋 · 150/次</div><div class="catalog-items">{gacha_rows}</div></div>'
 
     catalog_section = f'<div class="section-title">可兑换奖品</div><div class="catalog-wrap">{catalog_html}</div>'
 
