@@ -365,8 +365,8 @@ def build_body(cache, hist):
             rows += f"""<tr>
   <td>{label}{mid_s}{bt_s}</td>
   <td>—</td>
-  <td style="color:#a08060">-{bet_v}</td>
-  <td style="color:#a08060">{f'+{recv_v}' if recv_v else '—'}</td>
+  <td style="color:#c06050">-{bet_v}</td>
+  <td style="color:#4db86a">{f'+{recv_v}' if recv_v else '—'}</td>
   <td>{win_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
@@ -374,13 +374,15 @@ def build_body(cache, hist):
             net_v  = ev.get("net", 0)
             wag_v  = ev.get("wagered", 0)
             recv_v = wag_v + net_v
+            win_w  = ev.get("winnings")
             cnt_s  = f'×{ev["count"]}' if ev.get("count", 1) > 1 else ""
+            win_s  = fmt_num(win_w) if win_w is not None else "—"
             rows += f"""<tr>
   <td>{GAME_LABEL.get(ev['game'], ev['game'])} {cnt_s}</td>
   <td>—</td>
-  <td style="color:#a08060">-{wag_v}</td>
-  <td style="color:#a08060">{f'+{recv_v}' if recv_v > 0 else '—'}</td>
-  <td>—</td>
+  <td style="color:#c06050">-{wag_v}</td>
+  <td style="color:#4db86a">{f'+{recv_v}' if recv_v > 0 else '—'}</td>
+  <td>{win_s}</td>
   <td>{fmt_time(ev['at'])}</td>
 </tr>"""
         elif t == "cash":
