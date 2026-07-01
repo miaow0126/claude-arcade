@@ -158,6 +158,7 @@ def update_history(cache, hist):
                 hist.setdefault("prize_events", []).append({
                     "id": pid, "name": info[0], "emoji": info[1],
                     "cost": cost, "category": info[2],
+                    "source": "gacha" if from_gacha else "shop",
                     "obtained_at": ts, "used_at": None,
                 })
         hist["prev_gacha_cnt"] = prev_gacha_cnt
@@ -296,7 +297,7 @@ def build_body(cache, hist):
         cost_txt = f'<span style="color:#c06050">-{ev["cost"]}</span>'
         prize_rows += f"""<tr>
   <td>{ev['emoji']} {ev['name']}</td>
-  <td>{CAT_LABEL.get(ev['category'], ev['category'])}</td>
+  <td>{CAT_LABEL.get(ev['category'], ev['category'])}{'<span style="color:#806040;font-size:.75rem">（扭蛋）</span>' if ev.get('source')=='gacha' else ''}</td>
   <td>{cost_txt}</td>
   <td>{fmt_time(ev['obtained_at'])}</td>
   <td>{st}</td>
@@ -540,15 +541,19 @@ def build_body(cache, hist):
         catalog_html += f'<div class="catalog-group"><div class="catalog-cat">{CAT_LABEL[cat]}</div><div class="catalog-items">{rows}</div></div>'
 
     gacha_ids = {"bow","cat_ears","bunny_ears","cat_tail","sunglasses","umbrella","scarf","top_hat","wings","devil_horns","angel_set"}
-    gacha_rows = ""
+    gacha_items = []
     for pid, info in PRIZE_INFO.items():
         if pid not in gacha_ids:
             continue
         name, emoji, _, _, _ = info
         owned_cnt = sum(1 for ev in prize_events if ev["id"] == pid and ev["used_at"] is None)
         mark = f' <span style="color:#4db86a">✓{owned_cnt}</span>' if owned_cnt else ""
-        gacha_rows += f'<div class="catalog-item"><span class="ci-name">{emoji} {name}{mark}</span><span class="ci-cost">150</span></div>'
-    catalog_html += f'<div class="catalog-group"><div class="catalog-cat">扭蛋 · 150/次</div><div class="catalog-items">{gacha_rows}</div></div>'
+        gacha_items.append(f'<span class="ci-name">{emoji} {name}{mark}</span>')
+    mid = (len(gacha_items) + 1) // 2
+    col1 = "".join(f'<div class="catalog-item">{x}</div>' for x in gacha_items[:mid])
+    col2 = "".join(f'<div class="catalog-item">{x}</div>' for x in gacha_items[mid:])
+    gacha_rows = f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px"><div>{col1}</div><div>{col2}</div></div>'
+    catalog_html += f'<div class="catalog-group"><div class="catalog-cat">扭蛋 · 150/次</div>{gacha_rows}</div>'
 
     catalog_section = f'<div class="section-title">可兑换奖品</div><div class="catalog-wrap">{catalog_html}</div>'
 
